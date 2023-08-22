@@ -44,4 +44,4 @@ action() {
     # source the analysis setup
     source "${ANALYSIS_PATH}/setup.sh" ""
 }
-action
+action "$@"

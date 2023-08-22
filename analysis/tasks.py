@@ -38,7 +38,7 @@ class CreateChars(Task, CrabWorkflow, law.LocalWorkflow):
 
     def output(self):
         # it's best practice to encode the branch number into the output target
-        return self.local_target("output_{}.json".format(self.branch))
+        return self.remote_target("output_{}.json".format(self.branch))
 
     def run(self):
         # the branch data holds the integer number to convert

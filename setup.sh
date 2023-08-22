@@ -40,7 +40,9 @@ action() {
         >&2 echo "lcg directory ${LCG_DIR} not existing"
         return "1"
     fi
-    source "${LCG_DIR}/etc/profile.d/setup-c7-ui-python3-example.sh" "" || return "$?"
+    if [ "${IS_REMOTE_JOB}" = "0" ]; then
+        source "${LCG_DIR}/etc/profile.d/setup-c7-ui-python3-example.sh" "" || return "$?"
+    fi
 
     # venv
     local software_flag="${VENV_PATH}/.installed"
@@ -69,8 +71,9 @@ action() {
     fi
 
     # additional exports
+    local pyv="$( python -c "import sys; print('{0.major}.{0.minor}'.format(sys.version_info))" )"
     export PATH="${ANALYSIS_PATH}/bin:${PATH}"
-    export PYTHONPATH="${ANALYSIS_PATH}:${ANALYSIS_PATH}/modules/law:${PYTHONPATH}"
+    export PYTHONPATH="${ANALYSIS_PATH}:${ANALYSIS_PATH}/modules/law:${VENV_PATH}/lib/python${pyv}/site-packages:${PYTHONPATH}"
 
 
     #
