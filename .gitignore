@@ -1,0 +1,9 @@
+*.sublime-project
+*.sublime-workspace
+*.pyc
+*.log
+*.DS_Store
+*.pkl
+__pycache__
+data
+.law

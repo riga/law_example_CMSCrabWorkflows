@@ -1,0 +1,3 @@
+[submodule "modules/law"]
+	path = modules/law
+	url = git@github.com:riga/law.git
