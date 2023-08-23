@@ -57,6 +57,9 @@ bootstrap_htcondor_getenv() {
     # on htcondor with the "getenv" feature enabled (job env is the same as the submission env),
     # simply call the analysis setup script again for htcondor specific adjustments
 
+    # reset X509_USER_PROXY when a proxy file is given
+    [ ! -z "{{voms_proxy_file}}" ] && export X509_USER_PROXY="${PWD}/{{voms_proxy_file}}"
+
     source "{{analysis_path}}/setup.sh" ""
 }
 
