@@ -12,10 +12,10 @@ import law
 
 
 # import our "framework" tasks
-from analysis.framework import Task, CrabWorkflow
+from analysis.framework import Task, CrabWorkflow, HTCondorWorkflow
 
 
-class CreateChars(Task, CrabWorkflow, law.LocalWorkflow):
+class CreateChars(Task, law.LocalWorkflow, CrabWorkflow, HTCondorWorkflow):
     """
     Simple task that has a trivial payload: converting integers into ascii characters. The task is
     designed to be a workflow with 26 branches. Each branch creates one character (a-z) and saves
@@ -23,10 +23,10 @@ class CreateChars(Task, CrabWorkflow, law.LocalWorkflow):
     data it processes is defined in the *branch_map*. A task can access this data via
     ``self.branch_map[self.branch]``, or via ``self.branch_data`` by convenience.
 
-    By default, CreateChars is a HTCondorWorkflow (first workflow class in the inheritance order,
-    MRO). If you want to execute it as a LocalWorkflow, add the ``"--workflow local"`` parameter on
-    the command line. The code in this task should be completely independent of the actual *run
-    location*, and law provides the means to do so.
+    By default, CreateChars is a LocalWorkflow (first workflow class in the inheritance order, MRO).
+    If you want to execute it on Crab, add ``"--workflow crab"`` parameter on the command line, or
+    ``"--workflow htcondor"`` for HTCondor. The code in this task should be completely independent
+    of the actual *run location*, and law provides the means to do so.
 
     When a branch greater or equal to zero is set, e.g. via ``"--branch 1"``, you instantiate a
     single *branch task* rather than the workflow. Branch tasks are always executed locally.

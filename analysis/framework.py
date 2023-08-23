@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Law example tasks to demonstrate HTCondor workflows at CERN.
+Law example tasks to demonstrate workflows using Crab as well as HTCondor at CERN.
 
 In this file, some really basic tasks are defined that can be inherited by
 other tasks to receive the same features. This is usually called "framework"
@@ -11,28 +11,15 @@ and only needs to be defined once per user / group / etc.
 
 import os
 import re
+import math
 
 import luigi
 import law
 
 
-# the crab workflow implementation is part of a law contrib package
-# so we need to explicitly load it, plus others
-law.contrib.load("cms", "git", "tasks", "wlcg")
-
-
-###
-# type of examples:
-# - all within cmssw, use custom stageout (transfer logs via standard stageout?)
-#   - requires gfal in cmssw
-#   - still requires repository bundling
-#   - software setup in venv (requires software bundling) or on CMSSW python directory?
-#
-# - all outside cmssw
-#   - requires gfal in cmssw for file transfers on remote side
-#   - requires repository bundling
-#   - requires software bundling (use venv?), and this might be placed inside cmssw env, compatible?
-###
+# the crab and htcondor workflow implementations are part of law "contrib" packages
+# so we need to explicitly load them, plus some others
+law.contrib.load("cms", "git", "htcondor", "tasks", "wlcg")
 
 
 class Task(law.Task):
@@ -71,18 +58,14 @@ class Task(law.Task):
 
 class CrabWorkflow(law.cms.CrabWorkflow):
     """
-    Batch systems are typically very heterogeneous by design, and so is HTCondor. Law does not aim
-    to "magically" adapt to all possible HTCondor setups which would certainly end in a mess.
-    Therefore we have to configure the base HTCondor workflow in law.contrib.htcondor to work with
-    the CERN HTCondor environment. In most cases, like in this example, only a minimal amount of
-    configuration is required.
+    Crab has lots of settings to configure almost every aspects of jobs and law does not aim to
+    to "magically" guess all possible settings for you, which would certainly end in a mess.
+    Therefore we have to adjust the base Crab workflow in law.contrib.cms to our needs in this
+    example, which we do by create a subclass. However, in most cases, as in this example, only a
+    minimal amount of configuration is required.
     """
 
-    transfer_logs = luigi.BoolParameter(
-        default=False,
-        significant=False,
-        description="transfer job logs to the output directory; default: False",
-    )
+    # example for a parameter whose value is propagated to the crab job configuration
     crab_memory = law.BytesParameter(
         default=law.NO_FLOAT,
         unit="MB",
@@ -97,12 +80,12 @@ class CrabWorkflow(law.cms.CrabWorkflow):
         # keep a reference to the BundleRepo requirement to avoid redundant checksum calculations
         self.bundle_repo_req = BundleRepo.req(self)
 
-    def crab_storage_site(self):
-        # TODO: maybe merge with lfn base
-        return "T2_DE_DESY"
-
-    def crab_output_lfn_base(self):
-        return "/store/user/mrieger/law_crab_outputs3"
+    def crab_stageout_location(self):
+        # the storage site and base directory on it for crab specific outputs
+        return (
+            os.environ["GRID_SE"],
+            "/store/user/{}/".format(os.environ["GRID_USER"], os.environ["GRID_STORE_NAME"]),
+        )
 
     def crab_output_directory(self):
         # the directory where submission meta data should be stored
@@ -115,6 +98,7 @@ class CrabWorkflow(law.cms.CrabWorkflow):
         return law.JobInputFile(bootstrap_file, copy=False, render_job=True)
 
     def crab_workflow_requires(self):
+        # definition of requirements for the crab workflow to start
         reqs = super(CrabWorkflow, self).crab_workflow_requires()
 
         # add repo and software bundling as requirements
@@ -143,6 +127,8 @@ class CrabWorkflow(law.cms.CrabWorkflow):
             return ",".join(uris), pattern
 
         # render_variables are rendered into all files sent with a job
+        config.render_variables["bootstrap_name"] = "crab"
+        config.render_variables["grid_user"] = os.environ["GRID_USER"]
         config.render_variables["lcg_dir"] = os.environ["LCG_DIR"]
 
         # repo bundle variables
@@ -158,7 +144,65 @@ class CrabWorkflow(law.cms.CrabWorkflow):
         return config
 
 
+class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
+    """
+    Batch systems are typically very heterogeneous by design, and so is HTCondor. Law does not aim
+    to "magically" adapt to all possible HTCondor setups which would certainly end in a mess.
+    Therefore we have to configure the base HTCondor workflow in law.contrib.htcondor to work with
+    the CERN HTCondor environment. In most cases, like in this example, only a minimal amount of
+    configuration is required.
+    """
+
+    # example for a parameter whose value is propagated to the htcondor job configuration
+    max_runtime = law.DurationParameter(
+        default=1.0,
+        unit="h",
+        significant=False,
+        description="maximum runtime; default unit is hours; default: 1",
+    )
+    transfer_logs = luigi.BoolParameter(
+        default=True,
+        significant=False,
+        description="transfer job logs to the output directory; default: True",
+    )
+
+    def htcondor_output_directory(self):
+        # the directory where submission meta data should be stored
+        return law.LocalDirectoryTarget(self.local_path())
+
+    def htcondor_bootstrap_file(self):
+        # each job can define a bootstrap file that is executed prior to the actual job
+        # configure it to be shared across jobs and rendered as part of the job itself
+        bootstrap_file = law.util.rel_path(__file__, "bootstrap.sh")
+        return law.JobInputFile(bootstrap_file, share=True, render_job=True)
+
+    def htcondor_job_config(self, config, job_num, branches):
+        # render_variables are rendered into all files sent with a job
+        config.render_variables["bootstrap_name"] = "htcondor_getenv"
+        config.render_variables["analysis_path"] = os.getenv("ANALYSIS_PATH")
+
+        # force to run on CC7, http://batchdocs.web.cern.ch/batchdocs/local/submit.html#os-choice
+        config.custom_content.append(("requirements", "(OpSysAndVer =?= \"CentOS7\")"))
+
+        # maximum runtime
+        config.custom_content.append(("+MaxRuntime", int(math.floor(self.max_runtime * 3600)) - 1))
+
+        # copy the entire environment
+        config.custom_content.append(("getenv", "true"))
+
+        # the CERN htcondor setup requires a "log" config, but we can safely set it to /dev/null
+        # if you are interested in the logs of the batch system itself, set a meaningful value here
+        config.custom_content.append(("log", "/dev/null"))
+
+        return config
+
+
 class BundleRepo(Task, law.git.BundleGitRepository, law.tasks.TransferLocalFile):
+    """
+    This task is needed by the CrabWorkflow above as it bundles the example repository and uploads
+    it to a remote storage where crab jobs can access it. Each job then fetches and unpacks a bundle
+    to be able to access your code before the actual payload commences.
+    """
 
     replicas = luigi.IntParameter(
         default=5,
@@ -169,18 +213,21 @@ class BundleRepo(Task, law.git.BundleGitRepository, law.tasks.TransferLocalFile)
     exclude_files = ["data", ".law"]
 
     def get_repo_path(self):
-        # required by BundleGitRepository
+        # location of the repository to bundle, required by BundleGitRepository
         return os.environ["ANALYSIS_PATH"]
 
     def single_output(self):
+        # single output target definition, might be used to infer names and locations of replicas
         repo_base = os.path.basename(self.get_repo_path())
         return self.remote_target(f"{repo_base}.{self.checksum}.tgz")
 
     def get_file_pattern(self):
+        # returns a pattern (format "{}") into which the replica number can be injected
         path = os.path.expandvars(os.path.expanduser(self.single_output().path))
         return self.get_replicated_path(path, i=None if self.replicas <= 0 else r"[^\.]+")
 
     def output(self):
+        # the actual output definition, simply using what TransferLocalFile outputs
         return law.tasks.TransferLocalFile.output(self)
 
     @law.decorator.log
@@ -188,16 +235,22 @@ class BundleRepo(Task, law.git.BundleGitRepository, law.tasks.TransferLocalFile)
     def run(self):
         # create the bundle
         bundle = law.LocalFileTarget(is_tmp="tgz")
-        self.bundle(bundle)
+        self.bundle(bundle)  # method of BundleGitRepository
 
         # log the size
         self.publish_message(f"size is {law.util.human_bytes(bundle.stat().st_size, fmt=True)}")
 
         # transfer the bundle
-        self.transfer(bundle)
+        self.transfer(bundle)  # method of TransferLocalFile
 
 
 class BundleSoftware(Task, law.tasks.TransferLocalFile):
+    """
+    This task is needed by the CrabWorkflow above as it bundles the software environment (i.e. the
+    venv created by setup.sh) and uploads it to a remote storage where crab jobs can access it.
+    Each job then fetches and unpacks a bundle to be able to access your software before the actual
+    payload commences.
+    """
 
     replicas = luigi.IntParameter(
         default=5,
@@ -206,9 +259,11 @@ class BundleSoftware(Task, law.tasks.TransferLocalFile):
     version = None
 
     def single_output(self):
+        # single output target definition, might be used to infer names and locations of replicas
         return self.remote_target("software.tgz")
 
     def get_file_pattern(self):
+        # returns a pattern (format "{}") into which the replica number can be injected
         path = os.path.expandvars(os.path.expanduser(self.single_output().path))
         return self.get_replicated_path(path, i=None if self.replicas <= 0 else r"[^\.]+")
 
@@ -234,4 +289,4 @@ class BundleSoftware(Task, law.tasks.TransferLocalFile):
         ))
 
         # transfer the bundle
-        self.transfer(bundle)
+        self.transfer(bundle)  # method of TransferLocalFile

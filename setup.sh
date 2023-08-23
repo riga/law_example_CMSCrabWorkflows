@@ -7,6 +7,25 @@ action() {
 
 
     #
+    # detect GRID_USER
+    #
+
+    if [ -z "${GRID_USER}" ]; then
+        if hostname | grep -Po '^lxplus\d+\.cern\.ch' > /dev/null; then
+            export GRID_USER="$( whoami )"
+        else
+            2>&1 echo "you are not located on lxplus, please set GRID_USER before sourcing the setup"
+            return "1"
+        fi
+    fi
+    export GRID_USER_FIRSTCHAR="${GRID_USER:0:1}"
+    if [ "${#GRID_USER_FIRSTCHAR}" != "1" ]; then
+        2>&1 echo "could not detect first character of GRID_USER: '${GRID_USER_FIRSTCHAR}'"
+        return "1"
+    fi
+
+
+    #
     # setup variables
     #
 
@@ -17,6 +36,8 @@ action() {
     export VENV_PATH="${SOFTWARE_PATH}/venv"
     export STORE_PATH="${DATA_PATH}/store"
     export JOB_PATH="${DATA_PATH}/jobs"
+    export GRID_STORE_NAME="${GRID_STORE_NAME:-law_CMSCrabWorkflow_outputs}"
+    export GRID_SE="${GRID_SE:-T2_DE_DESY}"
 
     # flags
     export IS_ON_CRAB="${IS_ON_CRAB:-0}"
@@ -40,9 +61,7 @@ action() {
         >&2 echo "lcg directory ${LCG_DIR} not existing"
         return "1"
     fi
-    if [ "${IS_REMOTE_JOB}" = "0" ]; then
-        source "${LCG_DIR}/etc/profile.d/setup-c7-ui-python3-example.sh" "" || return "$?"
-    fi
+    source "${LCG_DIR}/etc/profile.d/setup-c7-ui-python3-example.sh" "" || return "$?"
 
     # venv
     local software_flag="${VENV_PATH}/.installed"
