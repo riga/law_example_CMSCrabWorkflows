@@ -36,7 +36,6 @@ action() {
     export VENV_PATH="${SOFTWARE_PATH}/venv"
     export STORE_PATH="${DATA_PATH}/store"
     export JOB_PATH="${DATA_PATH}/jobs"
-    export GRID_STORE_NAME="${GRID_STORE_NAME:-law_CMSCrabWorkflow_outputs}"
     export GRID_SE="${GRID_SE:-T2_DE_DESY}"
 
     # flags

@@ -1,4 +1,4 @@
-# Example: Law workflows with CMS Crab (and HTCondor) at CERN
+# Law workflows with CMS Crab (and HTCondor) at CERN
 
 This example demonstrates how to create law task workflows that can submit jobs to both CMS Crab and the HTCondor batch system at CERN.
 
@@ -22,7 +22,7 @@ flowchart TD
 Resources: [luigi](http://luigi.readthedocs.io/en/stable), [law](http://law.readthedocs.io/en/latest)
 
 
-#### 1. Clone this example repository
+## 1. Clone this example repository
 
 Do not forget the ``--recursive`` option as `law` is currently integrated as a submdoule.
 
@@ -36,7 +36,7 @@ $ cd law_example_CMSCrabWorkflows
 ```
 
 
-#### 2. Source the setup script
+## 2. Source the setup script
 
 This sets up the software environment (a minimal virtual env / venv) when sourced for the first time, and configures a handful of environment variables.
 
@@ -45,7 +45,30 @@ $ source setup.sh
 ```
 
 
-#### 3. Let law index your tasks and their parameters
+## 3. Fill your storage information
+
+In this example, we will store output files at different locations:
+
+- `CreateChars`, by default, writes to your CERNBox directory (/eos/user/..., see [`[wlcg_fs]` in law.cfg](./law.cfg))
+- `CreateAlphabet` writes into a local directory at `data/store/CreateAlphabet/...`.
+
+However, we will use Crab jobs below which require two additional settings.
+They are only needed for the Crab submission to work but have **no effect** otherwise.
+
+Therefore, please adjust the `crab.storage_element` setting in [law.cfg](./law.cfg)❗️
+The value of `crab.base_directory` should work just fine.
+
+```ini
+[crab]
+
+storage_element: T2_DE_DESY
+base_directory: /store/user/$GRID_USER/law_CMSCrabWorkflow_outputs
+```
+
+**Note** that `GRID_USER` is inferred dynamically on lxplus.
+
+
+## 4. Let law index your tasks and their parameters
 
 The following commands quickly scans the tasks in the repository and saves their names and parameters in a temporary file that is used for fast auto completion of the `law run` command line tool in the next step.
 
@@ -73,7 +96,7 @@ written 2 task(s) to index file '/law_example_CMSCrabWorkflows/.law/index'
 ```
 
 
-#### 4. Run a single `CreateChars` task
+## 5. Run a single `CreateChars` task
 
 `CreateChars` is a workflow which - when invoked without a `--branch NUM` parameter - will potentially handle the submission of jobs to ran all its branch branches.
 The actual implementation of this mechanism depends on which `--workflow TYPE` is selected.
@@ -127,7 +150,7 @@ Have a look into the [law.cfg](./law.cfg) to see what `wlcg_fs` is referring to.
 Alternatively, add `--print-output 0` to the command instead of `--print-status 0` to see the exact output file locations.
 
 
-#### 5. Check the status of the `CreateAlphabet` task
+## 6. Check the status of the `CreateAlphabet` task
 
 Now we add `--print-status -1` to the `CreateAlphabet` task which in turn also shows the status of **all** requirements at any depth (`-1`).
 
@@ -150,7 +173,7 @@ The output of `CreateAlphabet` is missing as expected, but for `CreateChars` we 
 Therefore, its output is not a single file but a *collection* of all outputs of its branches.
 
 
-#### 6. Run everything, everywhere, all at once
+## 7. Run everything, everywhere, all at once
 
 Now, we trigger all tasks to run on either Crab or HTCondor jobs.
 The **important bit** is that it does not matter *where* jobs are run, as long as they produce the same output in the desired location.
@@ -241,7 +264,7 @@ INFO: luigi-interface - [pid 25835] Worker Worker(...) done      CreateAlphabet(
 ```
 
 
-#### 7. Check the status again
+## 8. Check the status again
 
 ```shell
 $ law run CreateAlphabet \
@@ -250,7 +273,7 @@ $ law run CreateAlphabet \
     --print-status -1
 ```
 
-When step 6 succeeded, all output targets should exist:
+When step 7 succeeded, all output targets should exist:
 
 ```shell
 print task status with max_depth -1 and target_depth 0

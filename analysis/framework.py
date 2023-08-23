@@ -83,8 +83,8 @@ class CrabWorkflow(law.cms.CrabWorkflow):
     def crab_stageout_location(self):
         # the storage site and base directory on it for crab specific outputs
         return (
-            os.environ["GRID_SE"],
-            "/store/user/{}/".format(os.environ["GRID_USER"], os.environ["GRID_STORE_NAME"]),
+            law.config.get_expanded("crab", "storage_element"),
+            law.config.get_expanded("crab", "base_directory"),
         )
 
     def crab_output_directory(self):
