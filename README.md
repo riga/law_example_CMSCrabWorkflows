@@ -61,7 +61,7 @@ The value of `crab.base_directory` should work just fine.
 ```ini
 [crab]
 
-storage_element: T2_DE_DESY
+storage_element: T2_DE_DESY  <-- CHANGE THIS ONE
 base_directory: /store/user/$GRID_USER/law_CMSCrabWorkflow_outputs
 ```
 
@@ -171,7 +171,7 @@ print task status with max_depth -1 and target_depth 0
 
 The output of `CreateAlphabet` is missing as expected, but for `CreateChars` we see that one out of 26 possible outputs exists due to the previous step.
 
-**Note** that `CreateChars` has the parameter `branch=-1` here, which means that it is a workflow wrapping all its 26 branch tasks.
+**Note** that `CreateChars` has the parameter `branch=-1` here, which means that it is a workflow wrapping all of its 26 branch tasks.
 Therefore, its output is not a single file but a *collection* of all outputs of its branches.
 
 
@@ -193,7 +193,7 @@ Run the following command (assuming Crab now).
 $ law run CreateAlphabet \
     --version v1 \
     --CreateChars-poll-interval 30sec \
-    --CreateChar-workflow crab \
+    --CreateChars-workflow crab \
     --print-status -1
 ```
 
@@ -232,7 +232,7 @@ Now, remove the `--print-status` parameter and **run the tasks** ❗️.
 $ law run CreateAlphabet \
     --version v1 \
     --CreateChars-poll-interval 30sec \
-    --CreateChar-workflow crab
+    --CreateChars-workflow crab
 ```
 
 After the bundle tasks are done you will see the message `submitted 25 crab job(s)` (we ran one task manually above), followed by the output of the job status polling which looks like the following.
@@ -271,7 +271,7 @@ INFO: luigi-interface - [pid 25835] Worker Worker(...) done      CreateAlphabet(
 ```shell
 $ law run CreateAlphabet \
     --version v1 \
-    --CreateChar-workflow crab \
+    --CreateChars-workflow crab \
     --print-status -1
 ```
 
