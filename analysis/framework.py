@@ -185,7 +185,9 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.custom_content.append(("requirements", "(OpSysAndVer =?= \"CentOS7\")"))
 
         # maximum runtime
-        config.custom_content.append(("+MaxRuntime", int(math.floor(self.max_runtime * 3600)) - 1))
+        max_runtime = int(math.floor(self.max_runtime * 3600)) - 1
+        config.custom_content.append(("+MaxRuntime", max_runtime))
+        config.custom_content.append(("+RequestRuntime", max_runtime))
 
         # copy the entire environment
         config.custom_content.append(("getenv", "true"))
