@@ -49,13 +49,13 @@ $ source setup.sh
 
 In this example, we will store output files at different locations:
 
-- `CreateChars`, by default, writes to your CERNBox directory (/eos/user/..., see [`[wlcg_fs]` in law.cfg](./law.cfg))
+- `CreateChars`, by default, writes to your CERNBox directory (/eos/user/..., see [`[wlcg_fs]` in law.cfg](./law.cfg#L23-L29))
 - `CreateAlphabet` writes into a local directory at `data/store/CreateAlphabet/...`.
 
 However, we will use Crab jobs below which require two additional settings.
 They are only needed for the Crab submission to work but have **no effect** otherwise.
 
-Therefore, please adjust the `crab.storage_element` setting in [law.cfg](./law.cfg)❗️
+Therefore, please adjust the `crab.storage_element` setting in [law.cfg](./law.cfg#L17-L20)❗️
 The value of `crab.base_directory` should work just fine.
 
 ```ini
@@ -145,8 +145,9 @@ print task status with max_depth 0 and target_depth 0
 ```
 
 The output exists now!
+
 **Note** that the output target is a `WLCGFileTarget` with its `fs` set to `wlcg_fs`.
-Have a look into the [law.cfg](./law.cfg) to see what `wlcg_fs` is referring to.
+Have a look into the [law.cfg](./law.cfg#L23-L29) to see what `wlcg_fs` is referring to.
 Alternatively, add `--print-output 0` to the command instead of `--print-status 0` to see the exact output file locations.
 
 
@@ -169,6 +170,7 @@ print task status with max_depth -1 and target_depth 0
 ```
 
 The output of `CreateAlphabet` is missing as expected, but for `CreateChars` we see that one out of 26 possible outputs exists due to the previous step.
+
 **Note** that `CreateChars` has the parameter `branch=-1` here, which means that it is a workflow wrapping all its 26 branch tasks.
 Therefore, its output is not a single file but a *collection* of all outputs of its branches.
 
@@ -182,7 +184,7 @@ In this sense, both Crab and HTCondor can be considered methods for *transportin
 *Run everything* and *all at once* mean that we do not trigger `CreateChars` tasks manually, but `CreateAlphabet` instead and let the requirement resolution handle things.
 
 Regarding *everywhere*, you decide where jobs should be transferred to: choose either `--workflow crab` or `--workflow htcondor`.
-Also, have a look into the [task implementation](./analysis/tasks.py), especially into how the `CreateChars` task is configured to run either on Crab or HTCondor.
+Also, have a look into the [task implementation](./analysis/tasks.py#L18), especially into how the `CreateChars` task is configured to run either on Crab or HTCondor.
 You will see that this is done in a **single line** (checkout which classes `CreateChars` inherits from).
 
 Run the following command (assuming Crab now).
