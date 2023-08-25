@@ -29,6 +29,7 @@ class Task(law.Task):
     """
 
     task_namespace = ""
+    output_collection_cls = law.SiblingFileCollection
 
     version = luigi.Parameter()
 
