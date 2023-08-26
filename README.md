@@ -45,18 +45,41 @@ $ source setup.sh
 ```
 
 
-## 3. Fill your storage information
+## 3. Maybe adjust the CMSSW version
 
-In this example, we will store output files at different locations:
+We will use Crab jobs in the following to run our tasks.
 
-- `CreateChars`, by default, writes to your CERNBox directory (/eos/user/..., see [`[wlcg_fs]` in law.cfg](./law.cfg#L23-L29))
-- `CreateAlphabet` writes into a local directory at `data/store/CreateAlphabet/...`.
+**Normally** this requires you to first setup a CMSSW environment from which jobs can be submitted.
+**This is not the case when using law**, but law rather sets up an environment internally only for the submission only.
+The default CMSSW version for this is defined by the [`crab_sandbox_name` value of the `[job]` section of the law.cfg](./law.cfg#L11).
 
-However, we will use Crab jobs below which require two additional settings.
-They are only needed for the Crab submission to work but have **no effect** otherwise.
+```ini
+[job]
 
-Therefore, please adjust the `crab.storage_element` setting in [law.cfg](./law.cfg#L17-L20)❗️
-The value of `crab.base_directory` should work just fine.
+crab_sandbox_name: CMSSW_10_6_30
+```
+
+Please change the this version **in case your lxplus machine is incompatible** with it.
+
+
+## 4. Fill your storage information
+
+In this example, we will store output files at different locations.
+**Your input is required** at **2.** and **3.** in the following❗️
+
+1. `CreateAlphabet` writes into a local directory at `data/store/CreateAlphabet/...`.
+
+2. `CreateChars`, by default, writes into your CERNBox directory. It does **not** use any local `/eos` mount but uses a remote protocol. However, depending on your certificate, remote jobs might not have access to your CERNBox directory. In this case, the remote job logs produced below report
+
+```text
+== CMSSW: run bootstrap file 'bootstrap.sh'
+== CMSSW: gfal-ls error: 13 (Permission denied) - Failed to stat file (Permission denied)
+== CMSSW: law_wlcg_get_file: could not determine file to load from 'root://eosuser.cern.ch/eos/user/YOUR_USER_NAME/law_CMSCrabWorkflow_outputs/BundleSoftware' with file name 'software.[^\.]+.tgz'
+```
+
+in the law job section. If you find your jobs failing, check for this issue in the remote log and adjust the [`base` URI in the `[wlcg_fs]` section of the law.cfg](./law.cfg#L25-L33) to a storage element of your choice.
+
+3. `CreateChars` will use Crab jobs below which require two additional settings. They are only needed for the Crab submission to work but have **no effect** otherwise. Therefore, please adjust the `crab.storage_element` setting in [law.cfg](./law.cfg#L19-L22)❗️ The value of `crab.base_directory` should work just fine.
 
 ```ini
 [crab]
@@ -68,7 +91,7 @@ base_directory: /store/user/$GRID_USER/law_CMSCrabWorkflow_outputs
 **Note** that `GRID_USER` is inferred dynamically on lxplus.
 
 
-## 4. Let law index your tasks and their parameters
+## 5. Let law index your tasks and their parameters
 
 The following commands quickly scans the tasks in the repository and saves their names and parameters in a temporary file that is used for fast auto completion of the `law run` command line tool in the next step.
 
@@ -96,7 +119,7 @@ written 2 task(s) to index file '/law_example_CMSCrabWorkflows/.law/index'
 ```
 
 
-## 5. Run a single `CreateChars` task
+## 6. Run a single `CreateChars` task
 
 `CreateChars` is a workflow which - when invoked without a `--branch NUM` parameter - will potentially handle the submission of jobs to ran all its branch branches.
 The actual implementation of this mechanism depends on which `--workflow TYPE` is selected.
@@ -147,11 +170,11 @@ print task status with max_depth 0 and target_depth 0
 The output exists now!
 
 **Note** that the output target is a `WLCGFileTarget` with its `fs` set to `wlcg_fs`.
-Have a look into the [law.cfg](./law.cfg#L23-L29) to see what `wlcg_fs` is referring to.
+Have a look into the [law.cfg](./law.cfg#L25-L33) to see what `wlcg_fs` is referring to.
 Alternatively, add `--print-output 0` to the command instead of `--print-status 0` to see the exact output file locations.
 
 
-## 6. Check the status of the `CreateAlphabet` task
+## 7. Check the status of the `CreateAlphabet` task
 
 Now we add `--print-status -1` to the `CreateAlphabet` task which in turn also shows the status of **all** requirements at any depth (`-1`).
 
@@ -175,7 +198,7 @@ The output of `CreateAlphabet` is missing as expected, but for `CreateChars` we 
 Therefore, its output is not a single file but a *collection* of all outputs of its branches.
 
 
-## 7. Run everything, everywhere, all at once
+## 8. Run everything, everywhere, all at once
 
 Now, we trigger all tasks to run on either Crab or HTCondor jobs.
 The **important bit** is that it does not matter *where* jobs are run, as long as they produce the same output in the desired location.
@@ -266,7 +289,7 @@ INFO: luigi-interface - [pid 25835] Worker Worker(...) done      CreateAlphabet(
 ```
 
 
-## 8. Check the status again
+## 9. Check the status again
 
 ```shell
 $ law run CreateAlphabet \
@@ -275,7 +298,7 @@ $ law run CreateAlphabet \
     --print-status -1
 ```
 
-When step 7 succeeded, all output targets should exist:
+When step 8 succeeded, all output targets should exist:
 
 ```shell
 print task status with max_depth -1 and target_depth 0
