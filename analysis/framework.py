@@ -225,11 +225,11 @@ class BundleRepo(Task, law.git.BundleGitRepository, law.tasks.TransferLocalFile)
 
     exclude_files = ["data", ".law"]
 
-    def get_repo_path(self):
-        # location of the repository to bundle, required by BundleGitRepository
+    def get_repo_path(self):  # required by BundleGitRepository
+        # location of the repository to bundle
         return os.environ["ANALYSIS_PATH"]
 
-    def single_output(self):
+    def single_output(self):  # required by TransferLocalFile
         # single output target definition, might be used to infer names and locations of replicas
         repo_base = os.path.basename(self.get_repo_path())
         return self.remote_target(f"{repo_base}.{self.checksum}.tgz")
@@ -239,7 +239,7 @@ class BundleRepo(Task, law.git.BundleGitRepository, law.tasks.TransferLocalFile)
         path = os.path.expandvars(os.path.expanduser(self.single_output().path))
         return self.get_replicated_path(path, i=None if self.replicas <= 0 else r"[^\.]+")
 
-    def output(self):
+    def output(self):  # both BundleGitRepository and TransferLocalFile define an output, so overwrite
         # the actual output definition, simply using what TransferLocalFile outputs
         return law.tasks.TransferLocalFile.output(self)
 
@@ -271,7 +271,7 @@ class BundleSoftware(Task, law.tasks.TransferLocalFile):
     )
     version = None
 
-    def single_output(self):
+    def single_output(self):  # required by TransferLocalFile
         # single output target definition, might be used to infer names and locations of replicas
         return self.remote_target("software.tgz")
 
