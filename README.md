@@ -59,17 +59,18 @@ The default CMSSW version for this is defined by the [`crab_sandbox_name` value 
 crab_sandbox_name: CMSSW_10_6_30
 ```
 
-Please change the this version **in case your lxplus machine is incompatible** with it.
+Please change this version **in case your lxplus machine is incompatible** with it.
 
 
 ## 4. Fill your storage information
 
 In this example, we will store output files at different locations.
-**Your input is required** at **2.** and **3.** in the following❗️
+
+**Your input is required** at points **2.** and **3.** in the following❗️
 
 1. `CreateAlphabet` writes into a local directory at `data/store/CreateAlphabet/...`.
 
-2. `CreateChars`, by default, writes into your CERNBox directory. It does **not** use any local `/eos` mount but uses a remote protocol. However, depending on your certificate, remote jobs might not have access to your CERNBox directory. In this case, the remote job logs produced below report
+2. `CreateChars`, by default, writes into your CERNBox directory. It does **not** use any local `/eos` mount but uses a remote protocol. However, depending on your certificate, remote jobs might not have access to your CERNBox directory. In this case, the remote job logs might show an error such as
 
 ```text
 == CMSSW: run bootstrap file 'bootstrap.sh'
@@ -77,9 +78,9 @@ In this example, we will store output files at different locations.
 == CMSSW: law_wlcg_get_file: could not determine file to load from 'root://eosuser.cern.ch/eos/user/YOUR_USER_NAME/law_CMSCrabWorkflow_outputs/BundleSoftware' with file name 'software.[^\.]+.tgz'
 ```
 
-in the law job section. If you find your jobs failing, check for this issue in the remote log and adjust the [`base` URI in the `[wlcg_fs]` section of the law.cfg](./law.cfg#L25-L33) to a storage element of your choice.
+in the user job section (all lines starting with `== CMSSW:`). If you find your jobs failing, check for this issue in the remote log and adjust the [`base` URI in the `[wlcg_fs]` section of the law.cfg](./law.cfg#L25-L33) to a storage element of your choice.
 
-3. `CreateChars` will use Crab jobs below which require two additional settings. They are only needed for the Crab submission to work but have **no effect** otherwise. Therefore, please adjust the `crab.storage_element` setting in [law.cfg](./law.cfg#L19-L22)❗️ The value of `crab.base_directory` should work just fine.
+3. `CreateChars` will use Crab jobs below which require two additional settings. They are only needed for the submission itself to work but have **no effect** otherwise. Therefore, please adjust the `crab.storage_element` setting in [law.cfg](./law.cfg#L19-L22)❗️ The value of `crab.base_directory` should work just fine.
 
 ```ini
 [crab]
@@ -93,7 +94,7 @@ base_directory: /store/user/$GRID_USER/law_CMSCrabWorkflow_outputs
 
 ## 5. Let law index your tasks and their parameters
 
-The following commands quickly scans the tasks in the repository and saves their names and parameters in a temporary file that is used for fast auto completion of the `law run` command line tool in the next step.
+The following command quickly scans the tasks in the repository and saves their names and parameters in a temporary file that is used for fast auto-completion of the `law run` command line tool in the next step.
 
 ```shell
 $ law index --verbose
@@ -121,11 +122,11 @@ written 2 task(s) to index file '/law_example_CMSCrabWorkflows/.law/index'
 
 ## 6. Run a single `CreateChars` task
 
-`CreateChars` is a workflow which - when invoked without a `--branch NUM` parameter - will potentially handle the submission of jobs to ran all its branch branches.
+`CreateChars` is a workflow which - when invoked without a `--branch NUM` parameter - will potentially handle the submission of jobs to run all its branch branches.
 The actual implementation of this mechanism depends on which `--workflow TYPE` is selected.
 
 In this example, the types `local`, `crab` and `htcondor` are supported.
-But for this first first test, let's execute a single task with `--branch 0`, i.e., the first branch task leading to the character "a".
+However, for this first test, let's execute only a single task with `--branch 0`, i.e., the first branch task leading to the character "a".
 
 ```shell
 $ law run CreateChars --version v1 --branch 0
@@ -154,6 +155,7 @@ This progress looks :) because there were no failed tasks or missing dependencie
 ```
 
 which means that the task execution was successful.
+
 To verify that, run the **same command as above**, but add `--print-status 0` which does not re-run the task, but print its status.
 The `0` refers to the recursion depth through task requirements and since a single `CreateChars` branch has no requirements on its own, `0` is a sensible value here.
 
