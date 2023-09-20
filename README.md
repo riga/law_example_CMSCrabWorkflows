@@ -50,7 +50,7 @@ $ source setup.sh
 We will use Crab jobs in the following to run our tasks.
 
 **Normally** this requires you to first setup a CMSSW environment from which jobs can be submitted.
-**This is not the case when using law**, but law rather sets up an environment internally only for the submission only.
+**This is not the case when using law**, but law rather sets up an environment internally for the submission only.
 The default CMSSW version for this is defined by the [`crab_sandbox_name` value of the `[job]` section of the law.cfg](./law.cfg#L11).
 
 ```ini
